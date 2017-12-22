@@ -1,23 +1,36 @@
 {
-  "name": "railway",
+  "name": "train",
   "version": "2.0.0",
-  "description": "Indian Railway bot",
+  "description": "Indian railway chatbot",
   "main": "app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node app.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ramachandrar143/train.git"
   },
   "keywords": [
     "Indian",
-    "railways",
-    "Node",
-    "js",
-    "dialog",
-    "flow",
-    "facebook"
+    "Railways",
+    "Dialogflow",
+    "Facebook",
+    "messenger",
+    "nodejs"
   ],
   "author": "Ramachandra Reddy, Yagnesh, Tarun, Shyam",
   "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ramachandrar143/train/issues"
+  },
+  "homepage": "https://github.com/ramachandrar143/train#readme",
   "dependencies": {
-    "express": "^4.16.2"
+    "body-parser": "^1.18.2",
+    "cloudant": "^1.10.0",
+    "dotenv": "^4.0.0",
+    "express": "^4.16.2",
+    "nodemailer": "^4.4.1",
+    "nodemailer-smtp-transport": "^2.7.4",
+    "request": "^2.83.0"
   }
 }
