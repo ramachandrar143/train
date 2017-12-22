@@ -1,0 +1,23 @@
+{
+  "name": "railway",
+  "version": "2.0.0",
+  "description": "Indian Railway bot",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "Indian",
+    "railways",
+    "Node",
+    "js",
+    "dialog",
+    "flow",
+    "facebook"
+  ],
+  "author": "Ramachandra Reddy, Yagnesh, Tarun, Shyam",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.16.2"
+  }
+}
