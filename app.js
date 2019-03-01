@@ -1,391 +1,249 @@
-require('dotenv').config();
-var express = require('express');
+    var express = require('express')
 var bodyParser = require('body-parser');
-var Cloudant = require('cloudant');
-var app = express();
-var request = require('request');
-var nodemailer = require('nodemailer');
-var smtp = require('nodemailer-smtp-transport');
+var request = require('request-promise')
+var cors = require('cors');
 var date = require('./Date.js');
-var user = 'ramachandrar143'
-var passwd = 'Ramachandrar143@gmail.com'
-var cloudant = Cloudant({ account: user, password: passwd });
-var db = cloudant.db.use('railway')
+var app = express();
+const APIKEY = "31433211260b5f3c66b434f01d066fa7";
+const RAILAPI = "vbebq9eciz"
+app.use(cors())
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-var transport = nodemailer.createTransport(smtp({
-    service: 'hotmail',
-    auth: {
-        user: "ramachandrar143@hotmail.com",
-        pass: "Music.143"
+const { WebhookClient } = require('dialogflow-fulfillment');
+const { Card, Suggestion, Payload } = require('dialogflow-fulfillment');
+
+app.listen(process.env.PORT ||3000, () => {
+    console.log("server running on 3000")
+});
+
+app.post('/', function (req, res) {
+    const agent = new WebhookClient({ request: req, response: res });
+    let intentMap = new Map();
+    intentMap.set('Default Welcome Intent', welcome);
+    intentMap.set('Default Fallback Intent', fallback);
+    intentMap.set('train_live_status', liveStatus);
+    // intentMap.set('pnr_status', pnrStatus);
+    intentMap.set('SEAT_AVAIL', seatAvailablity);
+    intentMap.set('fareEnq', fareEnquiry);
+    //intentMap.set('seat_layout', seatLayout);
+    intentMap.set('TrainsBwStations', TrainsBwStations)
+    agent.handleRequest(intentMap);
+
+    function welcome(agent) {
+        agent.add(`Welcome to my agent!`);
     }
-}));
-var d = new Date();
-var weekday = new Array(7);
-weekday[0] = "SUN";
-weekday[1] = "MON";
-weekday[2] = "TUE";
-weekday[3] = "WED";
-weekday[4] = "THU";
-weekday[5] = "FRI";
-weekday[6] = "SAT";
-var n = weekday[d.getDay()];
-var images = new Array(10);
-images[0] = 'https://www.railrider.in/blog/wp-content/uploads/2015/12/1433317533GatimaanExpress.jpg'
-images[1] = 'https://www.thebetterindia.com/wp-content/uploads/2015/09/traintoilet.jpg'
-images[2] = 'https://www.bahn.com/en/view/mdb/pv/agenturservice/2011/mdb_22990_ice_3_schnellfahrstrecke_nuernberg_-_ingolstadt_1000x500_cp_0x144_1000x644.jpg'
-images[3] = 'https://d1srlirzdlmpew.cloudfront.net/wp-content/uploads/sites/92/2015/12/06023356/train-hack-featured-1.jpg'
-images[4] = 'https://www.lakesiderailway.co.uk/wp-content/uploads/2016/05/train2-0x560.jpg'
-images[5] = 'http://www.mulierchile.com/train-pictures/train-pictures-020.jpg'
-images[6] = 'http://media2.intoday.in/indiatoday/images/stories/railway-4_647_080716084935.jpg'
-images[7] = 'http://media2.intoday.in/indiatoday/images/stories/railway-4_647_080716084935.jpg'
-images[8] = 'http://wonderfulmumbai.com/wp-content/uploads/2013/01/Indian_Railway.jpg'
-images[9] = 'https://i.ytimg.com/vi/tBZRI-u1Q94/maxresdefault.jpg'
-/**
- * Required modules for Bot 
- */
-app.listen(3000, function () {
-    console.log('Indian Railways are running on track 3000')
-})
-app.get('/', function (req, res) {
-    return res.json({ "hello": "hello" })
-})
-app.post('/api', function (req, res) {
-    console.log(req.body.result.contexts)
-    /* if (req.body.result.action == "validate") {
-         if ((req.body.result.parameters.pnumber).length != 10) {
-             console.log('Error')
-             return res.json({
-                 speech: 'Please Enter a valid mobile number',
-                 displayText: 'Here you go..!',
-                 contextOut: [
-                     {
-                         "name": "call",
-                         "parameters": {
-                             "pnumber": " "
-                         },
-                         "lifespan": 5
-                     }
-                 ]
-             })
-         }
-     }/*/
-    var intentName = req.body.result.metadata.intentName;
-    console.log(intentName);
-    if (intentName == "TrainsBwStations") {
-        var fromsta = req.body.result.parameters.fromStations;
-        var tosta = req.body.result.parameters.toStations;
+
+    function fallback(agent) {
+        agent.add(`I didn't understand`);
+        agent.add(`I'm sorry, can you try again?`);
+    }
+  /*  function seatLayout(agent) {
+        let trainNumber = agent.parameters.number;
         var options = {
-            url: 'https://api.railwayapi.com/v2/between/source/' + fromsta + '/dest/' + tosta + '/date/' + date.getDate() + '/apikey/' + process.env.APIKEY
+            url: "https://indianrailapi.com/api/v2/CoachLayout/apikey/" + APIKEY + "/TrainNumber/" + trainNumber,
+            json: true
         }
-        request(options, function (err, resp, body) {
-            if (err) {
-                console.log(err)
-            }
-            var jsonObj = eval('(' + body + ')');
-            console.log(body)
-            var o = {};
-            var key = 'elements'
-            o[key] = []
-            if (jsonObj.trains.length >= 9)
-                var x = 9
-            else
-                var x = jsonObj.trains.length
-            console.log('No of trains are ' + x)
-            for (var i = 0; i < x; i++) {
-                var a = {
-                    'title': jsonObj.trains[i].name,
-                    'subtitle': 'arriving at ' + jsonObj.trains[i].dest_arrival_time,
-                    "image_url": images[i],
-                    'buttons': [
-                        {
-                            'type': 'postback',
-                            'title': 'Live Status ',
-                            'payload': 'where is the train ' + jsonObj.trains[i].number + ''
-                        }, {
-                            'type': 'postback',
-                            'title': 'Turn on notifications',
-                            'payload': 'Noify me to when ' + jsonObj.trains[i].number + 'is near '
-                        }
-                    ]
-                }
-                o[key].push(a);
-            }
-            return res.json({
-                speech: 'hello',
-                displayText: 'Here you go..!',
-                'data': {
-                    'facebook': {
-                        'attachment': {
-                            'type': 'template',
-                            'payload': {
-                                'template_type': 'generic',
-                                'elements': o.elements
-                            }
-                        }
-                    }
-                }
+        return request(options).then((data) => {
+            console.log(data)
+            console.log((data.Coaches).length);
+            let str = '';
+           let data1 =  new Promise(function (resolve, reject) {
+                console.log("inside")
+                data.Coaches.forEach(await (coach) => {
+                    if(coach.SerialNo=='1')
+                    this.str += "" + coach.Number
+                else
+                    this.str += "-->"+coach.Number
+                });
+                resolve(str+"fsd")
+           })
+            data1.then(abc => {
+                console.log("dsfgs"+abc)
+                agent.add(abc)
             })
+            
+            
         })
     }
-    if (intentName == "NXTTRAIN") {
-        console.log(req.body.result.contexts)
-        var timeRange = req.body.result.parameters.number;
-        var stcode = req.body.result.parameters.any;
-        var options = {
-            url: 'http://api.railwayapi.com/v2/arrivals/station/' + stcode + '/hours/' + timeRange + '/apikey/' + process.env.APIKEY
+*/
+    function liveStatus(agent) {
+        console.log(agent.parameters);
+        console.log(date.getDate())
+        let trainNumber = req.body.queryResult.parameters.trainNumber;
+        let stationName = req.body.queryResult.parameters.stationName;
+        if (!agent.parameters.trainNumber) {
+            console.log("no train number")
+            agent.add("what is your train number")
         }
-        request(options, function (err, resp, body) {
-            if (err) {
-                console.log(err)
-            }
-            var jsonObj = eval('(' + body + ')');
-            //console.log(jsonObj.trains[2].number)
-            var o = {};
-            var key = 'elements'
-            o[key] = []
-            if (jsonObj.trains.length >= 9)
-                var x = 9
-            else
-                var x = jsonObj.trains.length
-            console.log('No of trains are ' + x)
-            for (var i = 0; i < x; i++) {
-                var a = {
-                    'title': jsonObj.trains[i].name,
-                    'subtitle': 'arriving at ' + jsonObj.trains[i].actarr,
-                    "image_url": images[i],
-                    'buttons': [
-                        {
-                            'type': 'postback',
-                            'title': 'Live Status ',
-                            'payload': 'where is the train ' + jsonObj.trains[i].number + ''
-                        }, {
-                            'type': 'postback',
-                            'title': 'Turn on notifications',
-                            'payload': 'Noify me to when ' + jsonObj.trains[i].number + 'is near '
-                        }
-                    ]
-                }
-                o[key].push(a);
-            }
-            console.log('Hello' + JSON.stringify(o.elements))
-            return res.json({
-                speech: 'hello',
-                displayText: 'Here you go..!',
-                'data': {
-                    'facebook': {
-                        'attachment': {
-                            'type': 'template',
-                            'payload': {
-                                'template_type': 'generic',
-                                'elements': o.elements
-                            }
-                        }
-                    }
-                }
-            })
-        })
-    }
-    if (intentName == "PNR") {
-        console.log(req.body.result.parameters)
-        var Pno = req.body.result.parameters.pnumber;  //User parameters from dialogflow.com
-        var options = {
-            url: 'http://api.railwayapi.com/v2/pnr-status/pnr/' + Pno + '/apikey/' + process.env.APIKEY
-        }
-        var o = {};
-        var key = 'elements'
-        o[key] = []
-        request(options, function (err, resp, body) {
-            //Indian Railway API call
-            if (body) {
-                console.log('' + body);
-                var jsonObj = eval('(' + body + ')');
-                console.log(jsonObj.passengers.length)
-                var o = {};
-                var key = 'elements'
-                o[key] = []
-                for (var i = 0; i < jsonObj.passengers.length; i++) {
-                    if ((jsonObj.passengers[i].current_status).slice(0, 2) == "WL" || (jsonObj.passengers[i].current_status).slice(0, 2) == 'RL') {
-                        var a = {
-                            "title": 'Passenger ' + i,
-                            "subtitle": "Your Tickets are not yet confirmed and your status is" + jsonObj.passengers[i].current_status,
-                            "image_url": 'http://www.institut-clement-ader.org/photo.php?id=ocherrier.png'
-                        }
-                        o[key].push(a);
-                    }
-                    else {
-                        var a = {
-                            "title": 'Passenger ' + i,
-                            "subtitle": "Your Tickets are confirmed  and your current status is :" + jsonObj.passengers[i].current_status,
-                            "image_url": "http://www.institut-clement-ader.org/photo.php?id=ocherrier.png"
-                        }
-                        o[key].push(a);
-                    }
-                }
-                console.log(JSON.stringify(o))
-                console.log('heloo test');
-                return res.json(
-                    {
-                        "speech": "hello test",
-                        "messages": [
-                            {
-                                "type": "simple_response",
-                                "platform": "google",
-                                "textToSpeech": "hello test"
-                            },
-                            {
-                                "type": "basic_card",
-                                "platform": "google",
-                                "title": "rose",
-                                "formattedText": "they are red",
-                                "image": {
-                                    "url": ""
-                                },
-                                "buttons": [
-                                    {
-                                        "title": "google",
-                                        "openUrlAction": {
-                                            "url": "https://www.google.com"
-                                        }
-                                    }
-                                ]
-                            },
-                            {
-                                "type": 0,
-                                "speech": "hello test"
-                            }
-                        ]
-                    })
-            }
-        })
-    }
-
-
-
-
-    if (intentName == "callme") {
-        var stname = req.body.result.parameters.stations;
-        var tno = req.body.result.parameters.number;
-        var phone = req.body.result.parameters.email;
-        console.log("sta name = " + stname.toUpperCase() + "  train no = " + tno)
-        var options = {
-            url: 'http://api.railwayapi.com/v2/live/train/' + tno + '/date/' + date.getDate() + '/apikey/' + process.env.APIKEY
-        }
-        request(options, function (err, resp, body) {
-            var jsonObj = eval('(' + body + ')');
-            //  console.log((jsonObj.route[10].station))
-            for (var i = 0; i < (jsonObj.route).length; i++) {
-                if (jsonObj.route[i].station.code == stname.toUpperCase()) {
-                    //console.log('Sch arr is :' + jsonObj.route[i].actarr)
-                    var scharr = jsonObj.route[i].actarr;
-                    db.insert({ _id: scharr, pno: phone, trainno: tno, stationname: stname }, function (err, data) {
-                        if (err) {
-                            console.log(err)
-                            return res.json({
-                                speech: 'Technical Error...! please try again...',
-                                displayText: 'Here you go..!'
-                            })
-                        }
-                        else {
-                            var message = {
-                                from: 'ramachandrar143@hotmail.com',
-                                to: phone,
-                                subject: 'Train Notification',
-                                text: 'We\'ll notify you when your train is at ' + stname + '. ' + scharr
-                            };
-                            transport.sendMail(message, function (error, success) {
-                                if (error) {
-                                    console.log('Error occured');
-                                    console.log(error.message);
-                                }
-                                else
-                                    console.log('Message sent successfully!');
-                            });
-
-                            return res.json({
-                                speech: 'Ok, we\'ll place a call for you! ',
-                                displayText: 'Here you go..!'
-                            })
-
-                        }
-                    })
-                }
-            }
-
-        })
-    }
-    if (intentName == "LIVE") {
-        var tno = req.body.result.parameters.number;
-        console.log('Helo  ' + tno);
-        var options = {
-            url: 'http://api.railwayapi.com/v2/live/train/' + tno + '/date/' + date.getDate() + '/apikey/' + process.env.APIKEY
-        }
-        request(options, function (err, resp, body) {
-            var jsonObj = eval('(' + body + ')');
-            console.log(jsonObj)
-            var st = jsonObj.position
-            if (st) {
-                console.log(st)
-                return res.json({
-                    "speech": "Your results:",
-                    "displayText": "Your results:",
-                    "data": {
-                        "facebook": {
-                            "attachment": {
-                                "type": "template",
-                                "payload": {
-                                    "template_type": "generic",
-                                    "elements": [
-                                        {
-                                            'title': jsonObj.train.name,
-                                            'subtitle': jsonObj.position,
-                                            'image_url': 'http://www.qygjxz.com/data/out/192/3960366-railway.png',
-                                            'buttons': [
-                                                {
-                                                    'type': 'postback',
-                                                    'title': 'Thank You!',
-                                                    'payload': 'Thank you!'
-                                                }
-                                            ]
-                                        }
-                                    ]
-                                }
-                            }
-                        }
-                    }
-                })
-            }
-        })
-    }
-})
-
-var notification = setInterval(function () {
-    var time = date.getTime()
-    console.log(time)
-    db.get(time, function (err, data) {
-        if (err) {
-
+        else if (!stationName) {
+            console.log(date.getDate)
+            agent.add("We would like to know your station code")
         }
         else {
-
-            console.log(data)
-            var message = {
-                from: 'ramachandrar143@hotmail.com',
-                to: data.pno,
-                subject: 'Train Notification',
-                text: 'Your Train' + data.trainno + ' is just arrived at ' + data.stationname + '. Get ready..! Happy Journey'
-            };
-            transport.sendMail(message, function (error, success) {
-                if (error) {
-                    console.log('Error occured');
-                    console.log(error.message);
+            console.log('https://api.railwayapi.com/v2/live/train/' + trainNumber + '/station/' + stationName + '/date/' + date.getDate() + '/apikey/' + RAILAPI)
+            var options = {
+                url: 'https://api.railwayapi.com/v2/live/train/' + trainNumber + '/station/' + stationName + '/date/' + date.getDate() + '/apikey/' + RAILAPI,
+                json:true
+            }
+            return request(options).then(data => {
+                
+                console.log(data)
+                if (data.position) {
+                    agent.add(data.position)
                 }
-                else
-                    console.log('Message sent successfully!');
-            });
-
-
-
+            }).catch((err) => {
+                console.log(err);
+                agent.add("We are unable to find live status for this train")
+            })
         }
-    })
-}, 60000)
+    }
+
+    function TrainsBwStations(agent) {
+        let source = agent.parameters.source;
+        let destination = agent.parameters.destination;
+        if (!source) {
+            agent.add("Please Enter your Source");
+        }
+        else if (!destination) {
+            agent.add("Please Enter your Destination");
+        }
+        else {
+            console.log('https://api.railwayapi.com/v2/between/source/' + source + '/dest/' + destination + '/date/' + date.getDate() + '/apikey/' + RAILAPI);
+            var options = {
+                url: 'https://api.railwayapi.com/v2/between/source/' + source + '/dest/' + destination + '/date/' + date.getDate() + '/apikey/' + RAILAPI,
+                json:true
+            }
+            return request(options).then(data => {
+                console.log(data)
+                
+                agent.add("wait")
+                if (data.total > 10) {
+                    for (i = 0; i < 10; i++){
+                        let train = data.trains[i];
+                        agent.add(new Card({
+                            title: train.name + " | " + train.number,
+                            text: "Travel time :"+train.travel_time+", Depatures from"+source+" at "+train.src_departure_time ,
+                            buttonText: 'Seat Availablity',
+                            buttonUrl: 'How many seats are available for ' + train.number
+                        }))
+                    }
+                }
+                else {
+                    for (i = 0; i < data.total; i++){
+                        let train = data.trains[i];
+                        agent.add(new Card({
+                            title: train.name + " | " + train.number,
+                            text: "Travel time :"+train.travel_time+", Depatures from"+source+" at "+train.src_departure_time ,
+                            buttonText: 'Seat Availablity',
+                            buttonUrl: 'How many seats are available for ' + train.number
+                        }))
+                    }
+                }
+            }).catch((err) => {
+                agent.add("Sorry! we are unable to find trains between given pair of stations")
+            })
+        }
+    }
+    function seatAvailablity(agent) {
+        console.log(agent.parameters)
+        let trainNumber = agent.parameters.trainnumber
+        let date = agent.parameters.date
+        let source =  agent.parameters.source
+        let destination = agent.parameters.destination
+        let classCode =  agent.parameters.class
+        if (!trainNumber) {
+            agent.add("Please enter your train number")
+        }
+        else if (!agent.parameters.source) {
+            agent.add("Please enter your Source station")
+        }
+        else if (!agent.parameters.destination) {
+            agent.add("Please enter your Destination station")
+        }
+        else if (!date) {
+            agent.add(new Suggestion('Today'));
+            agent.add(new Suggestion('Tomorrow'));
+        }
+        else if (!classCode) {
+            var options = {
+                url: 'https://api.railwayapi.com/v2/route/train/' + trainNumber + '/apikey/' + RAILAPI,
+                json:true
+            }
+            return request(options).then(data => {
+                for (i = 0; i < (data.train.classes).length; i++) {
+                    if (data.train.classes[i].available == "Y") {
+                        console.log(data.train.classes[i].code);
+                        agent.add(new Suggestion(data.train.classes[i].code))
+                    }
+                }
+            })
+        }
+        else {
+            console.log('https://api.railwayapi.com/v2/check-seat/train/' + trainNumber + '/source/' + source + '/dest/' + destination + '/date/' + changeFormat(date) + '/pref/' + classCode + '/quota/GN/apikey/' + RAILAPI)
+            var options = {
+                url: 'https://api.railwayapi.com/v2/check-seat/train/' + trainNumber + '/source/' + source + '/dest/' + destination + '/date/' + changeFormat(date) + '/pref/' + classCode + '/quota/GN/apikey/' + RAILAPI
+            }
+            return request(options).then(data => {
+                console.log(data)
+                var jsonObj = eval('(' + data + ')');
+                console.log(jsonObj)
+                let status = jsonObj.availability[0].status
+                agent.context.set({
+                    'name': 'ticket_fare',
+                    'lifespan': 1,
+                    'parameters': {
+                        'trainNumber': trainNumber,
+                        'classCode': classCode,
+                        'source': source,
+                        'destination': destination
+                    }
+                });
+
+                agent.add(new Card({
+                    title: trainNumber + " | " + classCode,
+                    text: "Status : " + status,
+                    buttonText: 'Fare Enquiry',
+                    buttonUrl: 'How much it cost for ' + trainNumber + ' from ' + source + ' to ' + destination + ' in ' + classCode
+                }))
+            }).catch(err => {
+                agent.add("something went wrong!")
+            })
+        }
+
+    }
+    function fareEnquiry(agent) {
+
+        tcketContexts = agent.context.get('ticket_fare')
+        let trainNumber = tcketContexts.parameters.trainNumber;
+        let classCode = tcketContexts.parameters.classCode;
+        let source = tcketContexts.parameters.source;
+        let destination = tcketContexts.parameters.destination
+        agent.add("");
+        var options = {
+            url: 'http://indianrailapi.com/api/v2/TrainFare/apikey/' + APIKEY + '/TrainNumber/' + trainNumber + '/From/' + source + '/To/' + destination + '/Quota/GN',
+            json: true
+        }
+        return request(options).then((data) => {
+            (data.Fares).filter((fare) => {
+
+                if (fare.Code == classCode) {
+                    console.log(fare)
+                    console.log("It costs " + fare.Fare + " from " + source + " to " + destination)
+                    agent.add("It costs " + fare.Fare + " from " + source + " to " + destination)
+                }
+            })
+        })
+    }
+});
+
+function changeFormat(date) {
+    var todayTime = new Date(date);
+
+    var month = (todayTime.getMonth() + 1);
+
+    var day = (todayTime.getDate());
+
+    var year = (todayTime.getFullYear());
+    console.log(day + "-" + month + "-" + year)
+    return day + "-" + month + "-" + year
+}

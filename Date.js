@@ -1,6 +1,8 @@
 module.exports = {
     getDate: function gtDate() {
         var today = new Date();
+        // utc = dte.getTime() + (dte.getTimezoneOffset() * 60000);
+        // today = new Date(utc + (3600000 * (+5.5)));
         var dd = today.getDate();
         var mm = today.getMonth() + 1;
         var yyyy = today.getFullYear();
@@ -10,11 +12,13 @@ module.exports = {
         if (mm < 10) {
             mm = '0' + mm;
         }
-        var today = dd + '-' + mm + '-' + yyyy;
+        var today = dd+"-"+mm+"-"+yyyy;
         return today;
     },
     getTime: function gttime() {
-        var today = new Date();
+        var dte = new Date();
+        utc = dte.getTime() + (dte.getTimezoneOffset() * 60000);
+        today = new Date(utc + (3600000 * (+5.5)));
         var hr = today.getHours();
         var min = today.getMinutes();
         if (hr < 10) {
